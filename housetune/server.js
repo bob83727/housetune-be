@@ -29,11 +29,18 @@ app.get('/', (req, res, next) => {
   res.send('test');
 });
 
+//使用pool方法
+app.get('/api/list', async (req, res, next) => {
+  
+  let [data] = await pool.query('SELECT * FROM inspiration');
+  res.json(data);
+});
+
 app.use((req, res, next) => {
   console.log('這裡是 404');
   res.send('404 not found');
 });
 
-app.listen(3001, () => {
-  console.log('Server running at port 3001');
+app.listen(3002, () => {
+  console.log('Server running at port 3002');
 });
