@@ -29,10 +29,34 @@ app.get('/', (req, res, next) => {
   res.send('test');
 });
 
-//使用pool方法
+// 使用 pool 方法
+// inspiration
 app.get('/api/list', async (req, res, next) => {
-  
   let [data] = await pool.query('SELECT * FROM inspiration');
+  res.json(data);
+});
+
+// slider 資料、商品細節資料
+app.get('/NewArrival', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id order by prod_id DESC limit 10'
+  );
+  res.json(data);
+});
+
+app.get('/Category/:categoryRoom', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE category_room=? limit 10',
+    [req.params.categoryRoom]
+  );
+  res.json(data);
+});
+
+app.get('/products/:prodId', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
+    [req.params.prodId]
+  );
   res.json(data);
 });
 
@@ -41,6 +65,6 @@ app.use((req, res, next) => {
   res.send('404 not found');
 });
 
-app.listen(3002, () => {
-  console.log('Server running at port 3002');
+app.listen(3001, () => {
+  console.log('Server running at port 3001');
 });
