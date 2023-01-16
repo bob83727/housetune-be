@@ -36,22 +36,32 @@ app.get('/api/list', async (req, res, next) => {
   res.json(data);
 });
 
-// slider 資料、商品細節資料
+// slider 資料，新品推薦
 app.get('/NewArrival', async (req, res, next) => {
   let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id order by prod_id DESC limit 10'
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 order by prod_id DESC limit 10'
   );
   res.json(data);
 });
 
-app.get('/Category/:categoryRoom', async (req, res, next) => {
+// slider 資料，相關商品推薦
+app.get('/Category/:categoryRoom/:prodId', async (req, res, next) => {
   let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE category_room=? limit 10',
-    [req.params.categoryRoom]
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 AND category_room=? AND prod_id != ? AND amount > 0 limit 10',
+    [req.params.categoryRoom, req.params.prodId]
   );
   res.json(data);
 });
 
+// 商品列表
+app.get('/products', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 limit 10'
+  );
+  res.json(data);
+});
+
+// 商品細節頁
 app.get('/products/:prodId', async (req, res, next) => {
   let [data] = await pool.execute(
     'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
