@@ -24,6 +24,10 @@ app.use(
   })
 );
 
+
+const authRouter = require('./routers/authRouter');
+app.use('/api/auth', authRouter);
+
 app.get('/', (req, res, next) => {
   console.log('首頁');
   res.send('test');
