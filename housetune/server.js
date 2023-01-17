@@ -36,78 +36,8 @@ app.get('/api/list', async (req, res, next) => {
   res.json(data);
 });
 
-// slider 資料，新品推薦
-app.get('/newArrival', async (req, res, next) => {
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 order by prod_id DESC limit 10'
-  );
-  res.json(data);
-});
-
-// slider 資料，相關商品推薦
-app.get('/category/:categoryRoom/:prodId', async (req, res, next) => {
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 AND category_room=? AND prod_id != ? AND amount > 0 limit 10',
-    [req.params.categoryRoom, req.params.prodId]
-  );
-  res.json(data);
-});
-
-// 商品列表
-app.get('/products', async (req, res, next) => {
-  const page = req.query.page || 1;
-  // 取得資料筆數
-  let [result] = await pool.execute(
-    'SELECT COUNT(*) AS total FROM product WHERE valid = 1'
-  );
-  const total = result[0].total;
-
-  // 一頁20筆
-  const perPage = 20;
-  const totalPage = Math.ceil(total / perPage);
-
-  const limit = perPage;
-  const offset = perPage * (page - 1);
-
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 ORDER BY prod_id Limit ? OFFSET ?',
-    [limit, offset]
-  );
-  res.json({ pagination: { total, perPage, totalPage, page }, data });
-});
-
-// 商品列表(房間分類)
-app.get('/products/category/:categoryRoom', async (req, res, next) => {
-  const page = req.query.page || 1;
-  // 取得資料筆數
-  let [result] = await pool.execute(
-    'SELECT COUNT(*) AS total FROM product WHERE valid = 1 AND category_room=?',
-    [req.params.categoryRoom]
-  );
-  const total = result[0].total;
-
-  // 一頁20筆
-  const perPage = 20;
-  const totalPage = Math.ceil(total / perPage);
-
-  const limit = perPage;
-  const offset = perPage * (page - 1);
-
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 AND category_room=? ORDER BY prod_id Limit ? OFFSET ?',
-    [req.params.categoryRoom, limit, offset]
-  );
-  res.json({ pagination: { total, perPage, totalPage, page }, data });
-});
-
-// 商品細節頁
-app.get('/products/:prodId', async (req, res, next) => {
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
-    [req.params.prodId]
-  );
-  res.json(data);
-});
+const productRouter = require('./routers/productRouter');
+app.use('/api/products', productRouter);
 
 app.use((req, res, next) => {
   console.log('這裡是 404');
