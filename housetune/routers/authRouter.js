@@ -133,7 +133,7 @@ const registerRules = [
     //寫進session
     req.session.member = retMember
     res.json({
-        msg: '登入成功，將引導回首頁',
+        msg: '登入成功',
         member: retMember,
     })
 
