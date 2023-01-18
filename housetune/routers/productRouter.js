@@ -36,17 +36,52 @@ router.get('/', async (req, res, next) => {
   const totalPage = Math.ceil(total / perPage);
   const limit = perPage;
   const offset = perPage * (page - 1);
-  let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS categoryR_name,category_product.name AS categoryP_name FROM (product JOIN category_room ON product.category_room = category_room.id) JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 ORDER BY prod_id Limit ? OFFSET ?',
-    [limit, offset]
-  );
-  res.json({
-    pagination: { total, perPage, totalPage, page },
-    data,
-    stock: { inStock, outStock },
-    category,
-    categoryAmount,
-  });
+  // 初始資料
+  if (!req.query.currentSort) {
+    let [data] = await pool.execute(
+      'SELECT product.*, category_room.name AS categoryR_name,category_product.name AS categoryP_name FROM (product JOIN category_room ON product.category_room = category_room.id) JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 ORDER BY prod_id Limit ? OFFSET ?',
+      [limit, offset]
+    );
+    res.json({
+      pagination: { total, perPage, totalPage, page },
+      data,
+      stock: { inStock, outStock },
+      category,
+      categoryAmount,
+    });
+  }
+
+  // 排序
+  if (req.query.currentSort) {
+    const currentSortSwitch = (categoryRoom) => {
+      switch (categoryRoom) {
+        case '1':
+          return 'name ASC';
+        case '2':
+          return 'name DESC';
+        case '3':
+          return 'price ASC';
+        case '4':
+          return 'price DESC';
+        case '5':
+          return 'created_at ASC';
+        case '6':
+          return 'created_at DESC';
+      }
+    };
+    let sort = currentSortSwitch(req.query.currentSort);
+    let [data] = await pool.execute(
+      `SELECT product.*, category_room.name AS categoryR_name,category_product.name AS categoryP_name FROM (product JOIN category_room ON product.category_room = category_room.id) JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 ORDER BY ${sort} Limit ? OFFSET ?`,
+      [limit, offset]
+    );
+    res.json({
+      pagination: { total, perPage, totalPage, page },
+      data,
+      stock: { inStock, outStock },
+      category,
+      categoryAmount,
+    });
+  }
 });
 
 // 商品列表(房間分類)
