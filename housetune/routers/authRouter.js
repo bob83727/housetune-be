@@ -9,7 +9,7 @@ const registerRules = [
     //中間件 負責檢查email是否合法
     body('email').isEmail().withMessage('請輸入正確格式的email'),
     //中間件 檢查密碼的長度
-    body('password').isLength({ min: 8 }).withMessage('密碼長度至少為8'),
+    body('password').isLength({ min: 6 }).withMessage('密碼長度至少為6'),
     //中間件：檢查password和confirmPassword是否一致
     //客製自己想要的檢查條件
     body('rePassword')
@@ -26,18 +26,33 @@ const registerRules = [
     if(!validateResult.isEmpty()){
         return res.status(400).json({ errors: validateResult.array() });
     }
-    //檢查email是否已存在
-    let [members] = await pool.execute(
+    //檢查email和帳號是否已存在
+    let [members1] = await pool.execute(
         'SELECT * FROM user WHERE email = ?',
         [req.body.email]
       );
+    let [members2] = await pool.execute(
+        'SELECT * FROM user WHERE account = ?',
+        [req.body.account]
+      );
     //有代表重複註冊
-    if (members.length > 0) {
-        return res.status(200).json({
+    if (members1.length > 0) {
+        return res.status(400).json({
           errors: [
             {
               msg: 'email已經註冊過',
               param: 'email',
+            },
+          ],
+        });
+      }
+    
+    if (members2.length > 0) {
+        return res.status(400).json({
+          errors: [
+            {
+              msg: '此帳號已有用戶使用，請更換',
+              param: 'account',
             },
           ],
         });
@@ -55,6 +70,92 @@ const registerRules = [
       );
     console.log(result);
     res.send("註冊成功！將自動導入登錄頁面")
+  })
+  
+  router.post('/login', async (req, res, next)=>{
+    //接收到資料後跟資料庫做比對
+    console.log(req.body.account);
+    let [members] = await pool.execute('SELECT * FROM user WHERE account = ?', [
+        req.body.account,
+      ]);
+    //陣列長度為0代表沒有這個會員
+    console.log(members);
+    if(members.length===0){
+        return res.status(400).json({
+            errors: [
+                {
+                    msg: '帳號或密碼錯誤'
+                }
+            ]
+        })
+    }
+    console.log("hello");
+    //第二步比對密碼
+    let member = members[0];
+    let result = await argon2.verify(member.password, req.body.password);
+    console.log(result);
+    if (result === false) {
+        return res.status(400).json({
+        errors: [
+            {
+            msg: '帳號或密碼錯誤',
+            },
+        ],
+        });
+    }
+    if (member.valid !== 1){
+        return res.status(200).json({
+            errors: [
+                {
+                msg: '此用戶已遭停權，請與客服聯繫',
+                },
+            ],
+            });
+    }
+    //到這裡即為真實存在之用戶=>開始處理session
+    //要寫進session的內容
+    let retMember = {
+        id: member.user_id,
+        account: member.account,
+        name: member.name,
+        phone: member.phone,
+        email: member.email,
+        address: member.address,
+        bankcode: member.bank_code,
+        bankaccount: member.bank_account,
+        liked: member.liked,
+        cart: member.cart,
+        validcoupons: member.valid_coupons,
+        invalidcoupons: member.invalid_coupons,
+        rating: member.rating,
+        createdat:member.created_at,
+    }
+    //寫進session
+    req.session.member = retMember
+    res.json({
+        msg: '登入成功，將引導回首頁',
+        member: retMember,
+    })
+
+  })
+  router.get('/member', (req, res, next)=>{
+    if(req.session.member){
+      res.json({
+        loggedIn: true,
+        userInfo: req.session.member
+      })
+    }else{
+      res.json({
+        loggedIn: false,
+      })
+    }
+  })
+
+  router.post('/logout', (req, res, next)=>{
+    req.session.member=null
+    res.json({
+      msg: '登出成功',
+    })
   })
     
 

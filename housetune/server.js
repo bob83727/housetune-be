@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 require('dotenv').config();
 const pool = require('./utils/db');
+ 
 
 const cors = require('cors');
 app.use(
@@ -21,9 +22,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 *24 
+    },
   })
 );
-
 
 const authRouter = require('./routers/authRouter');
 app.use('/api/auth', authRouter);
