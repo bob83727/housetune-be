@@ -227,11 +227,15 @@ router.get('/newArrival', async (req, res, next) => {
 
 // 商品細節頁
 router.get('/:prodId', async (req, res, next) => {
+  let [rating] = await pool.execute(
+    'SELECT rating.*, user.account AS user_name From rating JOIN user ON rating.user_id = user.user_id WHERE product_id=?',
+    [req.params.prodId]
+  );
   let [data] = await pool.execute(
     'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
     [req.params.prodId]
   );
-  res.json(data);
+  res.json({ rating, data });
 });
 
 // slider 資料，相關商品推薦
@@ -241,6 +245,14 @@ router.get('/:categoryProduct/:prodId', async (req, res, next) => {
     [req.params.categoryProduct, req.params.prodId]
   );
   res.json(data);
+});
+
+router.put('/', async (req, res) => {
+  let result = await pool.execute('UPDATE user SET liked=? WHERE user_id=?', [
+    req.body.likeJson,
+    req.body.userId,
+  ]);
+  res.json({ result: 'ok' });
 });
 
 module.exports = router;
