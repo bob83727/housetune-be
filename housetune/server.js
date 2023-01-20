@@ -21,8 +21,12 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 },
   })
 );
+
+const authRouter = require('./routers/authRouter');
+app.use('/api/auth', authRouter);
 
 app.get('/', (req, res, next) => {
   console.log('首頁');

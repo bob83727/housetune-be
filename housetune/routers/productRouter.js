@@ -247,12 +247,24 @@ router.get('/:categoryProduct/:prodId', async (req, res, next) => {
   res.json(data);
 });
 
-router.put('/', async (req, res) => {
+// 加入收藏
+router.put('/', async (req, res, next) => {
   let result = await pool.execute('UPDATE user SET liked=? WHERE user_id=?', [
     req.body.likeJson,
     req.body.userId,
   ]);
   res.json({ result: 'ok' });
+});
+
+// 瀏覽紀錄
+router.post('/', async (req, res, next) => {
+  console.log(req.body);
+  let browse = req.body;
+  req.session.browsingHistory = browse;
+  res.json({
+    msg: 'ok',
+    browse,
+  });
 });
 
 module.exports = router;
