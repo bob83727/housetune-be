@@ -236,7 +236,6 @@ router.post('/', async (req, res, next) => {
     browse,
   });
 });
-
 // 獲取瀏覽紀錄session
 router.get('/browse', async (req, res, next) => {
   if (req.session.browsingHistory) {
@@ -246,6 +245,25 @@ router.get('/browse', async (req, res, next) => {
   } else {
     res.json({ data: 'null' });
   }
+});
+
+// 加入收藏
+router.put('/', async (req, res, next) => {
+  let result = await pool.execute('UPDATE user SET liked=? WHERE user_id=?', [
+    req.body.likeJson,
+    req.body.userId,
+  ]);
+  // console.log(req.body);
+  res.json({ result: 'ok' });
+});
+
+// 獲取收藏資訊
+router.get('/liked', async (req, res, next) => {
+  let [data] = await pool.execute('SELECT * FROM user WHERE user_id=?', [
+    req.session.member.id,
+  ]);
+  // console.log(req.session.member.id);
+  res.json(data);
 });
 
 // 商品細節頁
@@ -268,15 +286,6 @@ router.get('/:categoryProduct/:prodId', async (req, res, next) => {
     [req.params.categoryProduct, req.params.prodId]
   );
   res.json(data);
-});
-
-// 加入收藏
-router.put('/', async (req, res, next) => {
-  let result = await pool.execute('UPDATE user SET liked=? WHERE user_id=?', [
-    req.body.likeJson,
-    req.body.userId,
-  ]);
-  res.json({ result: 'ok' });
 });
 
 module.exports = router;
