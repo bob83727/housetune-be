@@ -225,6 +225,29 @@ router.get('/newArrival', async (req, res, next) => {
   res.json(data);
 });
 
+// 瀏覽紀錄存入session
+router.post('/', async (req, res, next) => {
+  // console.log(req.body);
+  let browse = req.body.browse;
+  req.session.browsingHistory = browse;
+  // console.log(req.session.browsingHistory, '存入');
+  res.json({
+    msg: 'ok',
+    browse,
+  });
+});
+
+// 獲取瀏覽紀錄session
+router.get('/browse', async (req, res, next) => {
+  if (req.session.browsingHistory) {
+    // console.log(req.session.browsingHistory, '獲取');
+    let data = req.session.browsingHistory;
+    res.json({ data });
+  } else {
+    res.json({ data: 'null' });
+  }
+});
+
 // 商品細節頁
 router.get('/:prodId', async (req, res, next) => {
   let [rating] = await pool.execute(
@@ -254,17 +277,6 @@ router.put('/', async (req, res, next) => {
     req.body.userId,
   ]);
   res.json({ result: 'ok' });
-});
-
-// 瀏覽紀錄
-router.post('/', async (req, res, next) => {
-  console.log(req.body);
-  let browse = req.body;
-  req.session.browsingHistory = browse;
-  res.json({
-    msg: 'ok',
-    browse,
-  });
 });
 
 module.exports = router;
