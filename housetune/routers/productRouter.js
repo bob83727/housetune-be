@@ -7,13 +7,18 @@ router.get('/', async (req, res, next) => {
   // 取得商品資料
   let data;
   // 供貨情況篩選
-  const currentStockMap = {
-    InStock: 'AND amount > 0',
-    OutStock: 'AND amount = 0',
-    '': '',
+  const currentStockSwitch = (stock) => {
+    switch (stock) {
+      case 'InStock':
+        return 'AND amount > 0';
+      case 'OutStock':
+        return 'AND amount = 0';
+      default:
+        return '';
+    }
   };
   // console.log(req.query.currentStock);
-  const stock = currentStockMap[req.query.currentStock || ''];
+  const stock = currentStockSwitch(req.query.currentStock || '');
 
   // 價格篩選
   let minPrice = '';
@@ -112,13 +117,18 @@ router.get('/category/:categoryRoom', async (req, res, next) => {
   // 取得商品資料
   let data;
   // 供貨情況篩選
-  const currentStockMap = {
-    InStock: 'AND amount > 0',
-    OutStock: 'AND amount = 0',
-    '': '',
+  const currentStockSwitch = (stock) => {
+    switch (stock) {
+      case 'InStock':
+        return 'AND amount > 0';
+      case 'OutStock':
+        return 'AND amount = 0';
+      default:
+        return '';
+    }
   };
   // console.log(req.query.currentStock);
-  const stock = currentStockMap[req.query.currentStock || ''];
+  const stock = currentStockSwitch(req.query.currentStock || '');
 
   // 價格篩選
   let minPrice = '';
