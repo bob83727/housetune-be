@@ -31,6 +31,10 @@ app.use('/api/auth', authRouter)
 const useCoupon = require('./routers/useCoupon')
 app.use('/api/usecoupon', useCoupon)
 
+// 成立訂單
+const paymentRouter = require('./routers/paymentRouter')
+app.use('/api/payment', paymentRouter)
+
 app.get('/', (req, res, next) => {
   console.log('首頁')
   res.send('test')
