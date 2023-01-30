@@ -283,7 +283,7 @@ router.get('/:prodId', async (req, res, next) => {
     [req.params.prodId]
   )
   let [data] = await pool.execute(
-    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
+    'SELECT product.*, category_room.name AS categoryR_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE prod_id=?',
     [req.params.prodId]
   )
   res.json({ rating, data })
