@@ -6,6 +6,7 @@ const now = new Date()
 // console.log(now)
 router.post('/', async (req, res, next) => {
   console.log('POST/api/payment', req.body.orderMsg)
+  // INSERT order_list & order_detail
   let result = await pool.query(
     'INSERT INTO order_list (user_id,price,address,state,note,order_date,valid) VALUES (?,?,?,?,?,?,?);',
     [
@@ -18,7 +19,13 @@ router.post('/', async (req, res, next) => {
       1,
     ]
   )
-  console.log(result)
+  let productData = { ...req.body.orderMsg.products }
+  let result2 = await pool.query(
+    'INSERT INTO order_detail (order_list_id,product_id) VALUES (?,?);',
+    [result[0].insertId, JSON.stringify(productData)]
+  )
+  console.log('result', result)
+  console.log('result2', result2)
   res.json('新增成功')
 })
 
