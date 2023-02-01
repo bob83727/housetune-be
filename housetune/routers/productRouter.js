@@ -259,7 +259,7 @@ router.get('/liked', async (req, res, next) => {
 // 商品細節頁
 router.get('/:prodId', async (req, res, next) => {
   let [rating] = await pool.execute(
-    'SELECT rating.*, user.account AS user_name From rating JOIN user ON rating.user_id = user.user_id WHERE product_id=?',
+    'SELECT rating.*, user.name AS user_name From rating JOIN user ON rating.user_id = user.user_id WHERE product_id=?',
     [req.params.prodId]
   );
   let [data] = await pool.execute(
