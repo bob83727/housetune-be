@@ -160,6 +160,14 @@ router.post('/login', async (req, res, next) => {
     member: retMember,
   });
 });
+
+router.get('/forgot', async (req, res, next) => {
+  let [data] = await pool.execute('SELECT user.name FROM user WHERE email=?', [
+    req.query.toEmail,
+  ]);
+  res.json(data);
+});
+
 router.get('/member', (req, res, next) => {
   if (req.session.member) {
     res.json({
