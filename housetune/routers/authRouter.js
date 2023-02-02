@@ -162,7 +162,7 @@ router.post('/login', async (req, res, next) => {
   });
 });
 
-// 寄信
+// 忘記密碼寄信
 router.get('/forgot', async (req, res, next) => {
   let [data] = await pool.execute('SELECT user.name FROM user WHERE email=?', [
     req.query.toEmail,
@@ -185,9 +185,10 @@ const authentication = (req, res, next) => {
     token = '';
   }
 
-  jwt.verify(token, 'shhhhh', function (err, decoded) {
+  const SECRET = 'housetune12345';
+  jwt.verify(token, SECRET, function (err, decoded) {
     if (err) {
-      return res.status(401).json({ message: 'Unauthorized!' });
+      return res.json({ state: 'FAILED', message: '驗證碼不存在或已失效!' });
     } else {
       req.email = decoded.data;
       next();
@@ -203,6 +204,7 @@ router.put('/reset', authentication, async (req, res, next) => {
     hashedPassword,
     req.email,
   ]);
+  res.json({ state: 'SUCCESS', message: '修改密碼成功' });
   // console.log(result);
 });
 
