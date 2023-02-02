@@ -8,6 +8,7 @@ router.post('/', async (req, res, next) => {
   try {
     console.log('POST/api/payment', req.body.orderMsg)
     // INSERT order_list & order_detail
+    console.log(req.body.orderMsg);
     let result = await pool.query(
       'INSERT INTO order_list (seller_id,user_id,price,address,state,note,order_date,valid) VALUES (1,?,?,?,?,?,?,?);',
       [

@@ -22,23 +22,26 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 1000 * 60 * 60 * 24 },
+    cookie: { maxAge: 1000 * 60 * 60 * 24 },
   })
-);
+)
 
-const authRouter = require('./routers/authRouter');
-app.use('/api/auth', authRouter);
+const authRouter = require('./routers/authRouter')
+app.use('/api/auth', authRouter)
 
-const useCoupon = require('./routers/useCoupon');
-app.use('/api/usecoupon', useCoupon);
+const useCoupon = require('./routers/useCoupon')
+app.use('/api/usecoupon', useCoupon)
 
 // 成立訂單
-const paymentRouter = require('./routers/paymentRouter');
-app.use('/api/payment', paymentRouter);
+const paymentRouter = require('./routers/paymentRouter')
+app.use('/api/payment', paymentRouter)
 
 app.get('/', (req, res, next) => {
-  console.log('首頁');
-  res.send('test');
-});
+  console.log('首頁')
+  res.send('test')
+})
+
+
 
 // 使用 pool 方法
 // inspiration
@@ -47,8 +50,14 @@ app.get('/api/list', async (req, res, next) => {
   res.json(data);
 });
 
-const productRouter = require('./routers/productRouter');
-app.use('/api/products', productRouter);
+const productRouter = require('./routers/productRouter')
+app.use('/api/products', productRouter)
+
+const sellerRouter = require('./routers/sellerRouter')
+app.use('/api/seller', sellerRouter)
+
+const usedProduct = require('./routers/usedProductRouter')
+app.use(usedProduct)
 
 app.use((req, res, next) => {
   console.log('這裡是 404');
