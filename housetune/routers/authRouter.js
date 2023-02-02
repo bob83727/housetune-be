@@ -3,6 +3,7 @@ const argon2 = require('argon2');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const pool = require('../utils/db');
+const jwt = require('jsonwebtoken');
 
 //先設定好檢查各項資料的規則
 const registerRules = [
@@ -160,6 +161,53 @@ router.post('/login', async (req, res, next) => {
     member: retMember,
   });
 });
+
+// 忘記密碼寄信
+router.get('/forgot', async (req, res, next) => {
+  let [data] = await pool.execute('SELECT user.name FROM user WHERE email=?', [
+    req.query.toEmail,
+  ]);
+
+  const SECRET = 'housetune12345';
+  const token = jwt.sign({ data: req.query.toEmail }, SECRET, {
+    expiresIn: '1h',
+  });
+
+  res.json({ data, token });
+});
+
+// token 中間件
+const authentication = (req, res, next) => {
+  let token;
+  try {
+    token = req.body.token;
+  } catch (e) {
+    token = '';
+  }
+
+  const SECRET = 'housetune12345';
+  jwt.verify(token, SECRET, function (err, decoded) {
+    if (err) {
+      return res.json({ state: 'FAILED', message: '驗證碼不存在或已失效!' });
+    } else {
+      req.email = decoded.data;
+      next();
+    }
+  });
+};
+
+// 修改密碼
+router.put('/reset', authentication, async (req, res, next) => {
+  // console.log(req.email);
+  const hashedPassword = await argon2.hash(req.body.password.pwd);
+  let result = await pool.execute('UPDATE user SET password=? WHERE email=?', [
+    hashedPassword,
+    req.email,
+  ]);
+  res.json({ state: 'SUCCESS', message: '修改密碼成功' });
+  // console.log(result);
+});
+
 router.get('/member', (req, res, next) => {
   if (req.session.member) {
     res.json({
