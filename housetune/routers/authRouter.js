@@ -164,20 +164,26 @@ router.post('/login', async (req, res, next) => {
 
 // 忘記密碼寄信
 router.get('/forgot', async (req, res, next) => {
-  let [data] = await pool.execute('SELECT user.name FROM user WHERE email=?', [
-    req.query.toEmail,
-  ]);
+  let [data] = await pool.execute(
+    'SELECT user.name,user.password FROM user WHERE email=?',
+    [req.query.toEmail]
+  );
+  const SECRET = 'ObVnSHgpCHzubR9';
+  let pwd;
+  if (data[0]) {
+    pwd = data[0].password;
+  } else {
+    pwd = 123;
+  }
 
-  const SECRET = 'housetune12345';
-  const token = jwt.sign({ data: req.query.toEmail }, SECRET, {
+  const token = jwt.sign({ data: req.query.toEmail }, SECRET + pwd, {
     expiresIn: '1h',
   });
-
   res.json({ data, token });
 });
 
-// token 中間件
-const authentication = (req, res, next) => {
+// token 驗證 中間件
+const authentication = async (req, res, next) => {
   let token;
   try {
     token = req.body.token;
@@ -185,8 +191,20 @@ const authentication = (req, res, next) => {
     token = '';
   }
 
-  const SECRET = 'housetune12345';
-  jwt.verify(token, SECRET, function (err, decoded) {
+  let base64Url = token.split('.')[1];
+  let base64 = base64Url.replace('-', '+').replace('_', '/');
+  let payload = JSON.parse(atob(base64));
+  // console.log(pwd1);
+
+  let [data] = await pool.execute(
+    'SELECT user.password FROM user WHERE email=?',
+    [payload.data]
+  );
+
+  const SECRET = 'ObVnSHgpCHzubR9';
+  const pwd = data[0].password;
+  // console.log(pwd);
+  jwt.verify(token, SECRET + pwd, function (err, decoded) {
     if (err) {
       return res.json({ state: 'FAILED', message: '驗證碼不存在或已失效!' });
     } else {
