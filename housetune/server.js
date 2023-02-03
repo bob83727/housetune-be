@@ -10,6 +10,35 @@ app.use(
     credentials: true,
   })
 );
+
+//for聊天室
+const http = require('http')
+const server = http.createServer(app)
+const { Server } = require('socket.io')
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:3000'],
+    methods: ["GET", "POST"]
+  }
+})
+io.on("connection", (socket)=>{
+  console.log(socket.id);
+
+  socket.on("join_room", (data)=>{
+    console.log(data);
+   socket.join(data)
+  })
+
+  socket.on("send_message", (data)=>{
+    // console.log(data);
+    socket.to(data.room).emit("recieve_message", data)
+  })
+
+  socket.on("disconnect", ()=>{
+    console.log("user disconnected", socket.id);
+  })
+})
+
 app.use(express.json());
 
 const expressSession = require('express-session');
@@ -22,12 +51,16 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 1000 * 60 * 60 * 24 },
-    cookie: { maxAge: 1000 * 60 * 60 * 24 },
   })
 )
 
 const authRouter = require('./routers/authRouter')
+const { Socket } = require('dgram');
+const { log } = require('console');
 app.use('/api/auth', authRouter)
+
+const chatRouter = require('./routers/chatRouter')
+app.use('/api/chat', chatRouter)
 
 const useCoupon = require('./routers/useCoupon')
 app.use('/api/usecoupon', useCoupon)
@@ -64,6 +97,9 @@ app.use((req, res, next) => {
   res.send('404 not found');
 });
 
-app.listen(3001, () => {
+// app.listen(3001, () => {
+//   console.log('Server running at port 3001');
+// });
+server.listen(3001, () => {
   console.log('Server running at port 3001');
 });
