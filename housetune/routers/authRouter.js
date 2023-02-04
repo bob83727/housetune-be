@@ -76,7 +76,7 @@ router.post('/register', registerRules, async (req, res, next) => {
     today.getSeconds();
 
   let result = await pool.execute(
-    'INSERT INTO user (account, password, name, phone, email, address, bank_code, bank_account, rating, created_at, last_modified, valid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO user (account, password, name, phone, email, address, bank_code, bank_account, rating, created_at, last_modified, valid, route) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       req.body.account,
       hashedPassword,
@@ -90,11 +90,75 @@ router.post('/register', registerRules, async (req, res, next) => {
       now,
       now,
       1,
+      1,
     ]
   );
   // console.log(result);
   res.send('註冊成功！');
 });
+
+router.post('/register/google', registerRules, async (req, res, next)=>{
+  const validateResult = validationResult(req);
+  // console.log(validateResult);
+  //errors陣列是空的代表ok
+  if (!validateResult.isEmpty()) {
+    return res.status(400).json({ errors: validateResult.array() });
+  }
+  //檢查帳號是否已存在 會進到register google頁面代表email沒註冊過 不用再檢查
+  let [members2] = await pool.execute('SELECT * FROM user WHERE account = ?', [
+    req.body.account,
+  ]);
+  //有代表重複註冊
+  if (members2.length > 0) {
+    return res.status(400).json({
+      errors: [
+        {
+          msg: '此帳號已有用戶使用，請更換',
+          param: 'account',
+        },
+      ],
+    });
+  }
+  //沒有就可以進到下一步＝>hash雜湊密
+  const hashedPassword = await argon2.hash(req.body.password);
+  //寫入資料庫
+  const fullAddress = req.body.address1 + req.body.address2 + req.body.address3;
+  let today = new Date();
+  let now =
+    today.getFullYear() +
+    '-' +
+    (today.getMonth() +
+    1)+
+    '-' +
+    today.getDate() +
+    ' ' +
+    today.getHours() +
+    ':' +
+    today.getMinutes() +
+    ':' +
+    today.getSeconds();
+
+  let result = await pool.execute(
+    'INSERT INTO user (account, password, name, phone, email, address, bank_code, bank_account, rating, created_at, last_modified, valid, route) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [
+      req.body.account,
+      hashedPassword,
+      req.body.name,
+      req.body.phone,
+      req.body.email,
+      fullAddress,
+      req.body.bankcode,
+      req.body.bankaccount,
+      0.0,
+      now,
+      now,
+      1,
+      2,
+    ]
+  );
+  // console.log(result);
+  res.send('註冊成功！');
+})
 
 router.post('/login', async (req, res, next) => {
   //接收到資料後跟資料庫做比對
@@ -216,28 +280,44 @@ router.post('/login/google', async(req, res, next)=>{
 
   // console.log(req.body.email);
 
-  let [members] = await pool.execute('SELECT * FROM user WHERE email = ?', [
-    req.body.email,
+  let [members] = await pool.execute('SELECT * FROM user WHERE email = ? AND route = ?', [
+    req.body.email, 2
   ]);
-  //陣列長度為0代表沒有這個會員
-
+  //看看這個email是不是有直接註冊過
+  let [members1] = await pool.execute('SELECT * FROM user WHERE email = ? AND route = ?', [
+    req.body.email, 1
+  ]);
+  
   // console.log("members", members);
-
+  
   // console.log(members);
-
-  if(members.length===0){
+  
+  //兩個陣列長度都為0代表真的沒有這個會員
+  if(members.length===0&&members1.length===0){
       return res.sendStatus(400)
   }
-  let member = members[0];
-  if (member.valid !== 1){
-    return res.status(400).json({
-        errors: [
-            {
-            msg: '此用戶已遭停權，請與客服聯繫',
-            },
-        ],
-        });
+  if(members.length!==0){
+    let member = members[0];
+    if (member.valid !== 1){
+      return res.status(400).json({
+          errors: [
+              {
+              msg: '此用戶已遭停權，請與客服聯繫',
+              },
+          ],
+          });
+    }
   }
+  if(members1.length!==0){
+      return res.status(400).json({
+        bundle :[
+          {
+            msg: '此email曾直接註冊本網站，請於下個頁面選擇是否綁定'
+          }
+        ]
+      })
+  }
+  let member = members[0];
   //到這裡即為真實存在之用戶=>開始處理session
   //要寫進session的內容
   let retMember = {
@@ -262,6 +342,55 @@ router.post('/login/google', async(req, res, next)=>{
       msg: '登入成功',
       member: retMember,
   })
+})
+
+//google帳號和現有帳號綁定
+router.put('/bundle/google', async(req, res, next)=>{
+  // console.log("body是", req.body);
+  let [members] = await pool.execute('SELECT * FROM user WHERE email = ?', [
+    req.body.email,
+  ]);
+  //第二步比對密碼
+  let member = members[0];
+  let result = await argon2.verify(member.password, req.body.password);
+  if (result === false) {
+    return res.status(400).json({
+      errors: [
+        {
+          msg: '密碼錯誤',
+        },
+      ],
+    });
+  }
+  //修正登入方式
+  let result1 = await pool.execute('UPDATE user SET route=? WHERE email=?', [
+    2,
+    req.body.email,
+  ]);
+ //要寫進session的內容
+ let retMember = {
+  id: member.user_id,
+  account: member.account,
+  name: member.name,
+  phone: member.phone,
+  email: member.email,
+  address: member.address,
+  bankcode: member.bank_code,
+  bankaccount: member.bank_account,
+  liked: member.liked,
+  cart: member.cart,
+  validcoupons: member.valid_coupons,
+  invalidcoupons: member.invalid_coupons,
+  rating: member.rating,
+  createdat: member.created_at,
+  };
+  //寫進session
+  req.session.member = retMember;
+  res.status(200).json({
+    msg: '綁定成功',
+    member: retMember,
+  });
+  
 })
 
 router.get('/member', (req, res, next) => {
