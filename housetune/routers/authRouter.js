@@ -64,8 +64,7 @@ router.post('/register', registerRules, async (req, res, next) => {
   let now =
     today.getFullYear() +
     '-' +
-    (today.getMonth() +
-    1)+
+    (today.getMonth() + 1) +
     '-' +
     today.getDate() +
     ' ' +
@@ -228,20 +227,26 @@ router.post('/login', async (req, res, next) => {
 
 // 忘記密碼寄信
 router.get('/forgot', async (req, res, next) => {
-  let [data] = await pool.execute('SELECT user.name FROM user WHERE email=?', [
-    req.query.toEmail,
-  ]);
+  let [data] = await pool.execute(
+    'SELECT user.name,user.password FROM user WHERE email=?',
+    [req.query.toEmail]
+  );
+  const SECRET = 'ObVnSHgpCHzubR9';
+  let pwd;
+  if (data[0]) {
+    pwd = data[0].password;
+  } else {
+    pwd = 123;
+  }
 
-  const SECRET = 'housetune12345';
-  const token = jwt.sign({ data: req.query.toEmail }, SECRET, {
+  const token = jwt.sign({ data: req.query.toEmail }, SECRET + pwd, {
     expiresIn: '1h',
   });
-
   res.json({ data, token });
 });
 
-// token 中間件
-const authentication = (req, res, next) => {
+// token 驗證 中間件
+const authentication = async (req, res, next) => {
   let token;
   try {
     token = req.body.token;
@@ -249,8 +254,20 @@ const authentication = (req, res, next) => {
     token = '';
   }
 
-  const SECRET = 'housetune12345';
-  jwt.verify(token, SECRET, function (err, decoded) {
+  let base64Url = token.split('.')[1];
+  let base64 = base64Url.replace('-', '+').replace('_', '/');
+  let payload = JSON.parse(atob(base64));
+  // console.log(pwd1);
+
+  let [data] = await pool.execute(
+    'SELECT user.password FROM user WHERE email=?',
+    [payload.data]
+  );
+
+  const SECRET = 'ObVnSHgpCHzubR9';
+  const pwd = data[0].password;
+  // console.log(pwd);
+  jwt.verify(token, SECRET + pwd, function (err, decoded) {
     if (err) {
       return res.json({ state: 'FAILED', message: '驗證碼不存在或已失效!' });
     } else {
@@ -273,7 +290,7 @@ router.put('/reset', authentication, async (req, res, next) => {
 });
 
 //google第三方登入
-router.post('/login/google', async(req, res, next)=>{
+router.post('/login/google', async (req, res, next) => {
   //接收到資料後跟資料庫做比對
 
   // console.log("email是", req.body.email);
@@ -291,7 +308,7 @@ router.post('/login/google', async(req, res, next)=>{
   // console.log("members", members);
   
   // console.log(members);
-  
+
   //兩個陣列長度都為0代表真的沒有這個會員
   if(members.length===0&&members1.length===0){
       return res.sendStatus(400)
@@ -334,15 +351,15 @@ router.post('/login/google', async(req, res, next)=>{
     validcoupons: member.valid_coupons,
     invalidcoupons: member.invalid_coupons,
     rating: member.rating,
-    createdat:member.created_at,
-  }
+    createdat: member.created_at,
+  };
   //寫進session
-  req.session.member = retMember
+  req.session.member = retMember;
   res.json({
-      msg: '登入成功',
-      member: retMember,
-  })
-})
+    msg: '登入成功',
+    member: retMember,
+  });
+});
 
 //google帳號和現有帳號綁定
 router.put('/bundle/google', async(req, res, next)=>{

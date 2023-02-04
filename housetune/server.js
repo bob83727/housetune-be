@@ -92,6 +92,9 @@ app.use('/api/seller', sellerRouter)
 const usedProduct = require('./routers/usedProductRouter')
 app.use(usedProduct)
 
+const usedPlatform = require('./routers/usedPlatformRouter')
+app.use(usedProduct)
+
 app.use((req, res, next) => {
   console.log('這裡是 404');
   res.send('404 not found');
