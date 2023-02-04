@@ -64,8 +64,8 @@ router.post('/register', registerRules, async (req, res, next) => {
   let now =
     today.getFullYear() +
     '-' +
-    today.getMonth() +
-    1 +
+    (today.getMonth() +
+    1)+
     '-' +
     today.getDate() +
     ' ' +
@@ -92,18 +92,18 @@ router.post('/register', registerRules, async (req, res, next) => {
       1,
     ]
   );
-  console.log(result);
-  res.send('註冊成功！將自動導入登錄頁面');
+  // console.log(result);
+  res.send('註冊成功！');
 });
 
 router.post('/login', async (req, res, next) => {
   //接收到資料後跟資料庫做比對
-  console.log(req.body.account);
+  // console.log(req.body.account);
   let [members] = await pool.execute('SELECT * FROM user WHERE account = ?', [
     req.body.account,
   ]);
   //陣列長度為0代表沒有這個會員
-  console.log(members);
+  // console.log(members);
   if (members.length === 0) {
     return res.status(400).json({
       errors: [
@@ -113,11 +113,11 @@ router.post('/login', async (req, res, next) => {
       ],
     });
   }
-  console.log('hello');
+  // console.log('hello');
   //第二步比對密碼
   let member = members[0];
   let result = await argon2.verify(member.password, req.body.password);
-  console.log(result);
+  // console.log(result);
   if (result === false) {
     return res.status(400).json({
       errors: [
@@ -128,7 +128,7 @@ router.post('/login', async (req, res, next) => {
     });
   }
   if (member.valid !== 1) {
-    return res.status(200).json({
+    return res.status(400).json({
       errors: [
         {
           msg: '此用戶已遭停權，請與客服聯繫',
@@ -207,6 +207,62 @@ router.put('/reset', authentication, async (req, res, next) => {
   res.json({ state: 'SUCCESS', message: '修改密碼成功' });
   // console.log(result);
 });
+
+//google第三方登入
+router.post('/login/google', async(req, res, next)=>{
+  //接收到資料後跟資料庫做比對
+
+  // console.log("email是", req.body.email);
+
+  // console.log(req.body.email);
+
+  let [members] = await pool.execute('SELECT * FROM user WHERE email = ?', [
+    req.body.email,
+  ]);
+  //陣列長度為0代表沒有這個會員
+
+  // console.log("members", members);
+
+  // console.log(members);
+
+  if(members.length===0){
+      return res.sendStatus(400)
+  }
+  let member = members[0];
+  if (member.valid !== 1){
+    return res.status(400).json({
+        errors: [
+            {
+            msg: '此用戶已遭停權，請與客服聯繫',
+            },
+        ],
+        });
+  }
+  //到這裡即為真實存在之用戶=>開始處理session
+  //要寫進session的內容
+  let retMember = {
+    id: member.user_id,
+    account: member.account,
+    name: member.name,
+    phone: member.phone,
+    email: member.email,
+    address: member.address,
+    bankcode: member.bank_code,
+    bankaccount: member.bank_account,
+    liked: member.liked,
+    cart: member.cart,
+    validcoupons: member.valid_coupons,
+    invalidcoupons: member.invalid_coupons,
+    rating: member.rating,
+    createdat:member.created_at,
+  }
+  //寫進session
+  req.session.member = retMember
+  res.json({
+      msg: '登入成功',
+      member: retMember,
+  })
+})
 
 router.get('/member', (req, res, next) => {
   if (req.session.member) {
