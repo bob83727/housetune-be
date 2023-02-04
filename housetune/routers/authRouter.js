@@ -64,8 +64,7 @@ router.post('/register', registerRules, async (req, res, next) => {
   let now =
     today.getFullYear() +
     '-' +
-    (today.getMonth() +
-    1)+
+    (today.getMonth() + 1) +
     '-' +
     today.getDate() +
     ' ' +
@@ -227,7 +226,7 @@ router.put('/reset', authentication, async (req, res, next) => {
 });
 
 //google第三方登入
-router.post('/login/google', async(req, res, next)=>{
+router.post('/login/google', async (req, res, next) => {
   //接收到資料後跟資料庫做比對
 
   // console.log("email是", req.body.email);
@@ -243,18 +242,18 @@ router.post('/login/google', async(req, res, next)=>{
 
   // console.log(members);
 
-  if(members.length===0){
-      return res.sendStatus(400)
+  if (members.length === 0) {
+    return res.sendStatus(400);
   }
   let member = members[0];
-  if (member.valid !== 1){
+  if (member.valid !== 1) {
     return res.status(400).json({
-        errors: [
-            {
-            msg: '此用戶已遭停權，請與客服聯繫',
-            },
-        ],
-        });
+      errors: [
+        {
+          msg: '此用戶已遭停權，請與客服聯繫',
+        },
+      ],
+    });
   }
   //到這裡即為真實存在之用戶=>開始處理session
   //要寫進session的內容
@@ -272,15 +271,15 @@ router.post('/login/google', async(req, res, next)=>{
     validcoupons: member.valid_coupons,
     invalidcoupons: member.invalid_coupons,
     rating: member.rating,
-    createdat:member.created_at,
-  }
+    createdat: member.created_at,
+  };
   //寫進session
-  req.session.member = retMember
+  req.session.member = retMember;
   res.json({
-      msg: '登入成功',
-      member: retMember,
-  })
-})
+    msg: '登入成功',
+    member: retMember,
+  });
+});
 
 router.get('/member', (req, res, next) => {
   if (req.session.member) {
