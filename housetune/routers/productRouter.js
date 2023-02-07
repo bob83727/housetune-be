@@ -54,13 +54,19 @@ router.get('/', async (req, res, next) => {
   }
   // 篩選完 ----
 
+  // 商品搜尋
+  let searchVar = '';
+  if (req.query.currentSearch) {
+    searchVar = `AND product.name LIKE "%${req.query.currentSearch}%"`;
+  }
+
   // 條件設定資料抓取
   // 取得庫存
   let [resultInStock] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 AND amount > 0 ${maxPrice} ${minPrice} ${categoryVar}`
+    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 AND amount > 0 ${maxPrice} ${minPrice} ${categoryVar} ${searchVar}`
   );
   let [resultOutStock] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 AND amount = 0 ${maxPrice} ${minPrice} ${categoryVar}`
+    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 AND amount = 0 ${maxPrice} ${minPrice} ${categoryVar} ${searchVar}`
   );
   const inStock = resultInStock[0].total;
   const outStock = resultOutStock[0].total;
@@ -68,7 +74,7 @@ router.get('/', async (req, res, next) => {
   const categoryAmount = [];
   for (let i = 1; i <= 10; i++) {
     let [result] = await pool.execute(
-      `SELECT COUNT(*) AS total,category_product.id AS category_id FROM product JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 AND category_product = ${i} ${stock} ${maxPrice} ${minPrice} ORDER BY id`
+      `SELECT COUNT(*) AS total,category_product.id AS category_id FROM product JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 AND category_product = ${i} ${stock} ${maxPrice} ${minPrice} ${searchVar} ORDER BY id`
     );
     categoryAmount.push(result[0]);
   }
@@ -79,7 +85,7 @@ router.get('/', async (req, res, next) => {
   const page = req.query.page || 1;
   // 取得資料筆數
   let [result] = await pool.execute(
-    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 ${stock} ${maxPrice} ${minPrice} ${categoryVar}`
+    `SELECT COUNT(*) AS total FROM product WHERE valid = 1 ${stock} ${maxPrice} ${minPrice} ${categoryVar} ${searchVar}`
   );
   const total = result[0].total;
   // 一頁20筆
@@ -100,7 +106,7 @@ router.get('/', async (req, res, next) => {
   };
   let sort = currentSortMap[req.query.currentSort || ''];
   [data] = await pool.query(
-    `SELECT product.*, category_room.name AS categoryR_name,category_product.name AS categoryP_name FROM (product JOIN category_room ON product.category_room = category_room.id) JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 ${stock} ${maxPrice} ${minPrice} ${categoryVar} ORDER BY ${sort} Limit ? OFFSET ?`,
+    `SELECT product.*, category_room.name AS categoryR_name,category_product.name AS categoryP_name FROM (product JOIN category_room ON product.category_room = category_room.id) JOIN category_product ON product.category_product = category_product.id WHERE valid = 1 ${stock} ${maxPrice} ${minPrice} ${categoryVar} ${searchVar} ORDER BY ${sort} Limit ? OFFSET ?`,
     [limit, offset]
   );
   res.json({
@@ -228,7 +234,7 @@ router.get('/category/:categoryRoom', async (req, res, next) => {
 
 // slider 資料，新品推薦
 router.get('/newArrival', async (req, res, next) => {
-  console.log('newArrival');
+  // console.log('newArrival');
   let [data] = await pool.execute(
     'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1 order by prod_id DESC limit 10'
   );
