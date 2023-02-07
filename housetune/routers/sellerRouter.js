@@ -35,50 +35,64 @@ router.post('/delete', async (req, res) => {
 });
 
 // 賣家中心(訂單)
-router.post('/order/all', async (req, res, next) => {
+router.post('/order', async (req, res, next) => {
   let [data] = await pool.execute(
-    'SELECT order_list.*, order_detail.product_id, user.account ,user.user_id as buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE seller_id = ?',[req.body.id]
+    'SELECT order_list.*, order_detail.product_id, user.* ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE seller_id = ?',
+    [req.body.id]
   );
   res.json(data);
 });
-// router.post('/salesorder/unpaid', async (req, res, next) => {
-//   let [data] = await pool.execute(
-//     'SELECT order_list.*, order_list.OrdL_id FROM order_list WHERE state = 1 AND seller_id = ?' ,[req.body.id]
-//   );
-//   res.json(data);
-// });
-// router.post('/salesorder/toship', async (req, res, next) => {
-//   let [data] = await pool.execute(
-//     'SELECT order_list.*, order_list.OrdL_id FROM order_list WHERE state = 2 AND seller_id = ?' ,[req.body.id]
-//   );
-//   res.json(data);
-// });
-// router.post('/salesorder/completed', async (req, res, next) => {
-//   let [data] = await pool.execute(
-//     'SELECT order_list.*, order_list.OrdL_id FROM order_list WHERE state = 3 AND seller_id = ?' ,[req.body.id]
-//   );
-//   res.json(data);
-// });
-// router.post('/salesorder/cancelled', async (req, res, next) => {
-//   let [data] = await pool.execute(
-//     'SELECT order_list.*, order_list.OrdL_id FROM order_list WHERE state = 4 AND seller_id = ?' ,[req.body.id]
-//   );
-//   res.json(data);
-// });
+router.post('/order/state', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT order_list.*, order_detail.product_id, user.account ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE state = ? AND seller_id = ?',
+    [req.body.state, req.body.id]
+  );
+  res.json(data);
+});
+// 取消訂單
+router.put('/order/cancel/all', async (req, res) => {
+  let results = await pool.query(
+    'UPDATE order_list SET state = 4 WHERE ordL_id = ?',
+    [req.body.id]
+  );
+  let [data] = await pool.execute(
+    'SELECT order_list.*, order_detail.product_id, user.* ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE seller_id = ?',
+    [req.body.seller_id]
+  );
+  res.json(data);
+});
+router.put('/order/cancel/unpaid', async (req, res) => {
+  let results = await pool.query(
+    'UPDATE order_list SET state = 4 WHERE ordL_id = ?',
+    [req.body.id]
+  );
+  let [data] = await pool.execute(
+    'SELECT order_list.*, order_detail.product_id, user.* ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE state = ? AND seller_id = ?',
+    [req.body.state, req.body.seller_id]
+  );
+  res.json(data);
+});
+
+// 搜尋
+router.get('/search', async (req, res, next) => {
+  let [data] = await pool.execute(
+    'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1'
+  );
+  res.json(data);
+});
 
 // 個人賣場
 router.get('/:userAcct', async (req, res, next) => {
   let [rating] = await pool.execute(
-    'SELECT user_rating.*, used_product.seller_id, used_product.img, used_product.name, user.user_id, user.account, user.valid FROM user_rating JOIN used_product ON user_rating.product_id = used_product.useP_id JOIN user ON used_product.seller_id = user.user_id WHERE user.valid = 1 AND user.account = ?;',
+    'SELECT user_rating.*, used_product.seller_id, used_product.img, used_product.name, user.user_id, user.account, user.valid FROM user_rating JOIN used_product ON user_rating.product_id = used_product.useP_id JOIN user ON used_product.seller_id = user.user_id WHERE user.valid = 1 AND user.account = ?',
     [req.params.userAcct]
   );
   let [data] = await pool.execute(
     'SELECT used_product.* FROM used_product JOIN user ON used_product.seller_id = user_id WHERE user.valid=1 AND used_product.valid = 1 AND user.account = ?',
     [req.params.userAcct]
   );
-  res.json({ rating, data });
+  let [category] = await pool.execute('SELECT * FROM category_product');
+  res.json({ rating, data, category });
 });
 
 module.exports = router;
-
-
