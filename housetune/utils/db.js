@@ -7,7 +7,8 @@ let pool = mysql2.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PWD,
   database: process.env.DB_NAME,
-
+  dateStrings:true,
+  
   connectionLimit: 10,
 });
 
