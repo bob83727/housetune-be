@@ -17,13 +17,18 @@ router.post('/', async (req, res, next) => {
 
 // 信用卡一次付清
 router.get('/creditPay', async (req, res, next) => {
-  console.log('api/creditPay=>', req.query)
+  console.log('api/creditPay=>', req.query.orderMessage)
   const messages = JSON.parse(req.query.orderMessage)
+  const itemObj = messages.products[0]
+  const keys = Object.keys(itemObj)
   try {
     const Coupon_data = JSON.stringify(messages.couponUse)
     let result = await pool.query(
-      'INSERT INTO order_list (seller_id,user_id,price,couponInfo,shippingFee,address,state,note,order_date,valid) VALUES (1,?,?,?,?,?,?,?,?,?);',
+      'INSERT INTO order_list (seller_id,user_id,price,couponInfo,shippingFee,address,state,note,order_date,valid) VALUES (?,?,?,?,?,?,?,?,?,?);',
       [
+        keys.includes('seller_id') === true
+          ? messages.products[0].seller_id
+          : 1,
         messages.userId, // user_id
         messages.price, // price
         Coupon_data, // couponInfo
