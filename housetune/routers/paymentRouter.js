@@ -1,38 +1,71 @@
 const express = require('express')
 const router = express.Router()
 const pool = require('../utils/db')
+const ecpay_payment = require('ecpay_aio_nodejs/lib/ecpay_payment.js')
+const options = require('ecpay_aio_nodejs/conf/config-example')
+const moment = require('moment')
 
-const now = new Date()
-// console.log(now)
+const now = moment().format('YYYY/MM/DD HH:mm:ss')
+
+// INSERT order_list & order_detail
+let orderID
+let total
+
 router.post('/', async (req, res, next) => {
+  res.json({})
+})
+
+// 信用卡一次付清
+router.get('/creditPay', async (req, res, next) => {
+  console.log('api/creditPay=>', req.query)
+  const messages = JSON.parse(req.query.orderMessage)
   try {
-    console.log('POST/api/payment', req.body.orderMsg)
-    // INSERT order_list & order_detail
-    console.log(req.body.orderMsg);
+    const Coupon_data = JSON.stringify(messages.couponUse)
     let result = await pool.query(
-      'INSERT INTO order_list (seller_id,user_id,price,address,state,note,order_date,valid) VALUES (1,?,?,?,?,?,?,?);',
+      'INSERT INTO order_list (seller_id,user_id,price,couponInfo,shippingFee,address,state,note,order_date,valid) VALUES (1,?,?,?,?,?,?,?,?,?);',
       [
-        req.body.orderMsg.userId,
-        req.body.orderMsg.price,
-        req.body.orderMsg.address,
-        req.body.orderMsg.state,
-        req.body.orderMsg.note,
-        now,
-        1,
+        messages.userId, // user_id
+        messages.price, // price
+        Coupon_data, // couponInfo
+        messages.shippingFee, // shippinigFee
+        messages.address, // address
+        messages.state, // state
+        messages.note, // note
+        now, // order_date
+        1, // valid
       ]
     )
-    let productData = { ...req.body.orderMsg.products }
+    let productData = { ...messages.products }
     let result2 = await pool.query(
       'INSERT INTO order_detail (order_list_id,product_id) VALUES (?,?);',
       [result[0].insertId, JSON.stringify(productData)]
     )
-    // console.log('result', result)
+    // console.log('result', result[0].insertId) // 訂單編號
+    orderID = result[0].insertId
+    total = messages.price
     // console.log('result2', result2)
-    res.json('新增成功')
+    let base_param = {
+      MerchantTradeNo: `${orderID}`, // 請帶 20 碼 uid ， 必須為唯一值
+      MerchantTradeDate: `${now}`, // ex: 2017/02/13 15:45:30
+      TotalAmount: `${total}`,
+      TradeDesc: 'Housetune歐風家具網',
+      ItemName: '家具',
+      ReturnURL: 'http://localhost:3001/', // 將通知結果傳給 server 需要回傳 '1|OK' 回綠界
+      ClientBackURL: 'http://localhost:3000/cart/checkout/thankyou', // 結帳完成後點選按鈕回去
+    }
+    // 使用信用卡一次付清方法
+    console.log('orderID:', orderID, ',total:', total, ',now', now)
+    const create = new ecpay_payment(options)
+    const htm = await create.payment_client.aio_check_out_credit_onetime(
+      (parameters = base_param)
+    )
+    res.send(htm)
   } catch (err) {
-    res.json('新增失敗', err)
+    console.log('failed', err)
+    res.json('新增失敗')
   }
 })
+
 // 訂單新增後取得該訂單編號
 router.get('/checkorder', async (req, res, next) => {
   // 拿到該使用者的訂單

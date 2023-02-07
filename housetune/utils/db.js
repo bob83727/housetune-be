@@ -9,6 +9,7 @@ let pool = mysql2.createPool({
   database: process.env.DB_NAME,
   dateStrings:true,
   
+
   connectionLimit: 10,
 });
 
