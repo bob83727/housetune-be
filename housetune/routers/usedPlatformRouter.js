@@ -18,13 +18,16 @@ router.get('/usedproduct/:useP_id',async(req,res)=>{
 
 router.get('/usedproduct/:usedProdId', async (req, res) => {
   console.log('req.params.usedProdId', req.params)
-  let result = await pool.query(
+  let [data] = await pool.query(
     'SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name,user.user_id, user.cart, user.name AS seller_name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id WHERE useP_id=?',
     [req.params.usedProdId]
   )
-  let data = result[0]
-  console.log(data)
-  res.json(data)
+  let [rating] = await pool.query(
+    'SELECT rating.*, used_product.seller_id FROM rating JOIN used_product ON used_product.useP_id = rating.product_id WHERE used_product.seller_id = ?',
+    [req.body.seller]
+  )
+  console.log(req.body.seller)
+  res.json({data, rating})
 })
 
 module.exports = router
