@@ -84,7 +84,7 @@ router.get('/search', async (req, res, next) => {
 // 個人賣場
 router.get('/:userAcct', async (req, res, next) => {
   let [rating] = await pool.execute(
-    'SELECT user_rating.*, used_product.seller_id, used_product.img, used_product.name, user.user_id, user.account, user.valid FROM user_rating JOIN used_product ON user_rating.product_id = used_product.useP_id JOIN user ON used_product.seller_id = user.user_id WHERE user.valid = 1 AND user.account = ?',
+    'SELECT rating.*, used_product.seller_id, used_product.img, used_product.name, user.user_id, user.account, user.valid FROM rating JOIN used_product ON rating.product_id = used_product.useP_id JOIN user ON used_product.seller_id = user.user_id WHERE user.valid = 1 AND user.account = ?',
     [req.params.userAcct]
   );
   let [data] = await pool.execute(

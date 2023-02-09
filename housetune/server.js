@@ -81,6 +81,9 @@ app.get('/api/list', async (req, res, next) => {
   res.json(data)
 })
 
+const userRouter = require('./routers/userRouter')
+app.use('/api/user', userRouter)
+
 const productRouter = require('./routers/productRouter')
 app.use('/api/products', productRouter)
 
