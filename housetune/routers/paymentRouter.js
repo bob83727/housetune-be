@@ -71,6 +71,43 @@ router.get('/creditPay', async (req, res, next) => {
   }
 })
 
+// 匯款
+router.get('/transfer', async (req, res, next) => {
+  console.log('api/creditPay=>', req.query.orderMessage)
+  const messages = JSON.parse(req.query.orderMessage)
+  const itemObj = messages.products[0]
+  const keys = Object.keys(itemObj)
+  try {
+    const Coupon_data = JSON.stringify(messages.couponUse)
+    let result = await pool.query(
+      'INSERT INTO order_list (seller_id,user_id,price,couponInfo,shippingFee,address,state,note,order_date,valid) VALUES (?,?,?,?,?,?,?,?,?,?);',
+      [
+        keys.includes('seller_id') === true
+          ? messages.products[0].seller_id
+          : 1,
+        messages.userId, // user_id
+        messages.price, // price
+        Coupon_data, // couponInfo
+        messages.shippingFee, // shippinigFee
+        messages.address, // address
+        1, // state
+        messages.note, // note
+        now, // order_date
+        1, // valid
+      ]
+    )
+    let productData = { ...messages.products }
+    let result2 = await pool.query(
+      'INSERT INTO order_detail (order_list_id,product_id) VALUES (?,?);',
+      [result[0].insertId, JSON.stringify(productData)]
+    )
+    res.redirect('http://localhost:3000/cart/checkout/thankyou')
+  } catch (err) {
+    console.log('failed', err)
+    res.json('新增失敗')
+  }
+})
+
 // 訂單新增後取得該訂單編號
 router.get('/checkorder', async (req, res, next) => {
   // 拿到該使用者的訂單
