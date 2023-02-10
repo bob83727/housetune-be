@@ -4,7 +4,7 @@ const pool = require('../utils/db')
 
 router.get('/usedproducts', async (req, res) => {
   let userID
-  if (req.session.member !== null) {
+  if (req.session.member) {
     userID = req.session.member.id
   } else {
     userID = 1
