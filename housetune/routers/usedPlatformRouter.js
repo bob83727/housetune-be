@@ -3,9 +3,15 @@ const router = express.Router()
 const pool = require('../utils/db')
 
 router.get('/usedproducts', async (req, res) => {
+  let userID
+  if (req.session.member !== null) {
+    userID = req.session.member.id
+  } else {
+    userID = 1
+  }
   let results = await pool.query(
     'SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name,u.description,user.user_id, user.cart, user.name AS seller_name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id WHERE seller_id <> ?',
-    [req.session.member.id]
+    [userID]
   )
   let data = results[0]
   res.json(data)
