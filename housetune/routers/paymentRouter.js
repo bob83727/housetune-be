@@ -34,10 +34,10 @@ router.get('/creditPay', async (req, res, next) => {
         Coupon_data, // couponInfo
         messages.shippingFee, // shippinigFee
         messages.address, // address
-        messages.state, // state
+        2, // state
         messages.note, // note
         now, // order_date
-        2, // valid
+        1, // valid
       ]
     )
     let productData = { ...messages.products }
