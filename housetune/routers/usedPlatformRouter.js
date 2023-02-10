@@ -4,17 +4,20 @@ const pool = require('../utils/db')
 
 router.get('/usedproducts', async (req, res) => {
   let results = await pool.query(
-    'SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name,u.description,user.user_id, user.cart, user.name AS seller_name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id '
+    'SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name,u.description,user.user_id, user.cart, user.name AS seller_name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id WHERE seller_id <> ?',
+    [req.session.member.id]
   )
   let data = results[0]
   res.json(data)
 })
-router.get('/usedproduct/:useP_id',async(req,res)=>{
-  let result = await pool.query('SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name AS product_name ,user.user_id, user.cart, user.name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id WHERE useP_id=?',[req.params.useP_id])    
-  let data = result[0]; 
-      res.json(data)
-  })
-  
+router.get('/usedproduct/:useP_id', async (req, res) => {
+  let result = await pool.query(
+    'SELECT u.useP_id, u.seller_id,u.category_product,u.amount,u.description,u.price,u.img,u.bought_in,u.updated_at,u.valid,u.name AS product_name ,user.user_id, user.cart, user.name, user.liked,user.rating,user.account FROM used_product AS u LEFT JOIN user on u.seller_id = user.user_id WHERE useP_id=?',
+    [req.params.useP_id]
+  )
+  let data = result[0]
+  res.json(data)
+})
 
 router.get('/usedproduct/:usedProdId', async (req, res) => {
   console.log('req.params.usedProdId', req.params)
@@ -27,7 +30,7 @@ router.get('/usedproduct/:usedProdId', async (req, res) => {
     [req.body.seller]
   )
   console.log(req.body.seller)
-  res.json({data, rating})
+  res.json({ data, rating })
 })
 
 module.exports = router
