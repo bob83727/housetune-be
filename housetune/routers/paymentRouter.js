@@ -37,7 +37,7 @@ router.get('/creditPay', async (req, res, next) => {
         messages.state, // state
         messages.note, // note
         now, // order_date
-        1, // valid
+        2, // valid
       ]
     )
     let productData = { ...messages.products }
