@@ -101,7 +101,7 @@ router.get('/transfer', async (req, res, next) => {
       'INSERT INTO order_detail (order_list_id,product_id) VALUES (?,?);',
       [result[0].insertId, JSON.stringify(productData)]
     )
-    res.redirect('http://localhost:3000/cart/checkout/thankyou')
+    res.redirect('http://localhost:3000/cart/checkout/thankyou?payment=atm')
   } catch (err) {
     console.log('failed', err)
     res.json('新增失敗')
