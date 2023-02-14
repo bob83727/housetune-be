@@ -44,7 +44,7 @@ router.post('/order', async (req, res, next) => {
 });
 router.post('/order/state', async (req, res, next) => {
   let [data] = await pool.execute(
-    'SELECT order_list.*, order_detail.product_id, user.account ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE state = ? AND seller_id = ?',
+    'SELECT order_list.*, order_detail.product_id, user.* ,user.user_id AS buyer_id FROM order_list JOIN user ON order_list.user_id = user.user_id JOIN order_detail ON order_list_id = ordL_id WHERE state = ? AND seller_id = ?',
     [req.body.state, req.body.id]
   );
   res.json(data);
@@ -79,6 +79,25 @@ router.get('/search', async (req, res, next) => {
     'SELECT product.*, category_room.name AS category_name FROM product JOIN category_room ON product.category_room = category_room.id WHERE valid = 1'
   );
   res.json(data);
+});
+
+//計算評價分數
+router.get('/rating/count', async (req, res, next) => {
+  let [rating] = await pool.execute(
+    'SELECT rating.*, used_product.seller_id, used_product.img, used_product.name, user.user_id AS userId, user.account, user.valid FROM rating JOIN used_product ON rating.product_id = used_product.useP_id JOIN user ON used_product.seller_id = user.user_id'
+  );
+  let [user] = await pool.execute('SELECT user.user_id FROM user');
+  res.json({ rating, user });
+});
+router.put('/rating/stars', async (req, res) => {
+  for (let i = 0; i < req.body.userId.length; i++) {
+    let aaa = req.body.stars[i];
+    let bbb = req.body.userId[i];
+    let results = await pool.execute(
+      'UPDATE user SET rating = ? WHERE user_id = ?',
+      [aaa, bbb]
+    );
+  }
 });
 
 // 個人賣場
