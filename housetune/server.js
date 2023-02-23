@@ -22,10 +22,10 @@ const io = new Server(server, {
   },
 })
 io.on('connection', (socket) => {
-  console.log(socket.id)
+  // console.log(socket.id)
 
   socket.on('join_room', (data) => {
-    console.log(data)
+    // console.log(data)
     socket.join(data)
   })
 
